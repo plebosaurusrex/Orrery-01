@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Su'Hur System — Echo, Drift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c12;
+    --accent: #f4a03a;
+    --popup-bg: rgba(10,12,22,0.97);
+    --popup-border: rgba(200,180,140,0.25);
+    --font-d: 'Cinzel', serif;
+    --font-b: 'Crimson Pro', Georgia, serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: var(--font-b);
+    color: #e0d8cc;
+    cursor: grab;
+    user-select: none;
+  }
+  body.panning { cursor: grabbing; }
+
+  #canvas-container {
+    width: 100%; height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#orrery {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Each HUD element is its own fixed div — NO wrapper ── */
+  #hud-title {
+    position: fixed;
+    top: 24px; left: 24px;
+    pointer-events: none;
+    z-index: 50;
+  }
+  #hud-title h1 {
+    font-family: var(--font-d);
+    font-size: 18px; font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(240,220,180,0.85);
+    line-height: 1.2;
+  }
+  #hud-title p {
+    font-family: var(--font-b);
+    font-style: italic; font-size: 12px;
+    color: rgba(200,180,140,0.45);
+    margin-top: 2px; letter-spacing: 0.04em;
+  }
+
+  #hud-hint {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    pointer-events: none;
+    z-index: 50;
+    font-family: var(--font-b);
+    font-size: 11px; font-style: italic;
+    color: rgba(200,180,140,0.3);
+  }
+
+  #hud-scale {
+    position: fixed;
+    bottom: 24px; left: 24px;
+    pointer-events: none;
+    z-index: 50;
+  }
+  #hud-scale-label {
+    font-family: var(--font-d);
+    font-size: 10px; letter-spacing: 0.06em;
+    color: rgba(200,180,140,0.55);
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  #hud-scale-bar {
+    width: 100px; height: 2px;
+    background: rgba(200,180,140,0.35);
+    position: relative;
+  }
+  #hud-scale-bar::before, #hud-scale-bar::after {
+    content: '';
+    position: absolute;
+    width: 2px; height: 7px;
+    background: rgba(200,180,140,0.35);
+    top: -2px;
+  }
+  #hud-scale-bar::before { left: 0; }
+  #hud-scale-bar::after  { right: 0; }
+
+  #hud-legend {
+    position: fixed;
+    top: 24px; right: 24px;
+    pointer-events: none;
+    z-index: 50;
+    background: rgba(10,12,22,0.82);
+    border: 1px solid rgba(200,180,140,0.12);
+    border-radius: 6px;
+    padding: 14px 16px;
+    min-width: 165px;
+  }
+  #hud-legend h3 {
+    font-family: var(--font-d);
+    font-size: 10px; letter-spacing: 0.1em;
+    color: rgba(200,180,140,0.5);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .li {
+    display: flex; align-items: center;
+    gap: 9px; margin-bottom: 7px;
+    font-size: 12px;
+    color: rgba(200,180,140,0.75);
+    font-family: var(--font-b);
+  }
+  .ld {
+    width: 10px; height: 10px;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .lr {
+    width: 10px; height: 10px;
+    border-radius: 50%; flex-shrink: 0;
+    border: 2px solid; background: transparent;
+  }
+  .lw {
+    width: 14px; height: 8px; flex-shrink: 0;
+    background: linear-gradient(90deg, rgba(255,160,40,0.8), rgba(255,200,80,0.15));
+    border-radius: 2px;
+  }
+
+  /* ── POPUP — standalone fixed element, nothing above it in the stacking context ── */
+  #popup {
+    position: fixed;
+    z-index: 9999;
+    min-width: 210px;
+    max-width: 280px;
+    background: var(--popup-bg);
+    border: 1px solid var(--popup-border);
+    border-radius: 6px;
+    padding: 16px 18px 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,200,100,0.04);
+    backdrop-filter: blur(8px);
+    /* Hidden state */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px);
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+    pointer-events: auto;
+  }
+  #popup.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0s;
+  }
+  #popup-close {
+    position: absolute;
+    top: 9px; right: 11px;
+    background: none; border: none;
+    color: rgba(200,180,140,0.55);
+    font-size: 20px; line-height: 1;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+    pointer-events: auto;
+  }
+  #popup-close:hover { color: #e8c47a; background: rgba(255,255,255,0.05); }
+  #popup-name {
+    font-family: var(--font-d);
+    font-size: 15px; font-weight: 600;
+    color: #f0e0b8; letter-spacing: 0.04em;
+    padding-right: 22px; line-height: 1.3;
+  }
+  #popup-type {
+    font-family: var(--font-b);
+    font-size: 12px; font-style: italic;
+    color: rgba(200,180,140,0.7);
+    margin-top: 3px; letter-spacing: 0.03em;
+  }
+  #popup-divider {
+    border: none;
+    border-top: 1px solid rgba(200,180,140,0.15);
+    margin: 10px 0 9px;
+  }
+  #popup-desc {
+    font-family: var(--font-b);
+    font-size: 13.5px; font-weight: 300;
+    line-height: 1.55; color: #ccc4b0;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <canvas id="orrery"></canvas>
+</div>
+
+<!-- HUD: each element independent -->
+<div id="hud-title">
+  <h1>Su&#x2019;Hur System</h1>
+  <p>Echo, Drift &middot; Interactive Orrery</p>
+</div>
+
+<div id="hud-hint">Scroll to zoom &middot; Drag to pan &middot; Click bodies to explore</div>
+
+<div id="hud-scale">
+  <div id="hud-scale-label">— AU —</div>
+  <div id="hud-scale-bar"></div>
+</div>
+
+<div id="hud-legend">
+  <h3>Planet Types</h3>
+  <div class="li"><div class="ld" style="background:#b09888;"></div>Rocky &middot; Uninhabitable</div>
+  <div class="li"><div class="ld" style="background:#5a9060;"></div>Rocky &middot; Habitable</div>
+  <div class="li"><div class="ld" style="background:#7aaac8;"></div>Ice World</div>
+  <div class="li"><div class="ld" style="background:#b86030;"></div>Gas Giant</div>
+  <div class="li"><div class="lr" style="border-color:#a09060;"></div>Gas Giant &middot; Rings</div>
+  <div class="li"><div class="ld" style="background:#80c0d8;"></div>Habitable Moon</div>
+  <div class="li"><div class="lw"></div>Cosmic Wellspring</div>
+</div>
+
+<!-- Popup: completely standalone -->
+<div id="popup">
+  <button id="popup-close" title="Close">&#x00D7;</button>
+  <div id="popup-name"></div>
+  <div id="popup-type"></div>
+  <hr id="popup-divider">
+  <div id="popup-desc"></div>
+</div>
+
+<script>
+(function(){
+
+// ─────────────────────────────────────────────
+// CANVAS SETUP
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('orrery');
+const ctx    = canvas.getContext('2d');
+let W, H, dpr;
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = canvas.offsetWidth;
+  H = canvas.offsetHeight;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize();
+window.addEventListener('resize', () => { resize(); });
+
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const STAR_R = 22;
+
+const bodies = [
+  {
+    id:'ravi', name:"Ravi", number:1,
+    type:"Rocky \u00b7 Uninhabitable", period:18,
+    orbitR:68, bodyR:3.5,
+    color:'#b09888', shineColor:'#d0b8a8',
+    desc:"Tiny, barren. A methane-dense atmosphere clings to its crater-scored surface. No value to the empire but proximity.",
+    shape:'rocky', angle:0.4
+  },
+  {
+    id:'uzara', name:"Uzara", number:2,
+    type:"Rocky \u00b7 Uninhabitable", period:73,
+    orbitR:100, bodyR:5,
+    color:'#b8a060', shineColor:'#d8c080',
+    desc:"Acid oceans eat at deep canyons. A thick CO\u2082 atmosphere makes it a portrait of ruin before the ruins.",
+    shape:'rocky', angle:1.2
+  },
+  {
+    id:'samaq', name:"Samaq", number:3,
+    type:"Rocky \u00b7 Once-Inhabited", period:196,
+    orbitR:138, bodyR:5.5,
+    color:'#c09070', shineColor:'#d8a878',
+    desc:"Blackened ruins dot a desert that used to be a civilization. Exterminated in the early conquests of the Ashur\u2019xal Empire.",
+    shape:'rocky', angle:2.0
+  },
+  {
+    id:'itzalche', name:"Itzalche", number:4,
+    type:"Rocky \u00b7 Habitable \u2014 Imperial Capital", period:290,
+    orbitR:174, bodyR:6,
+    color:'#3a8860', shineColor:'#5aaa78',
+    desc:"The jewel of the system. Home of the Ak\u2019shur people and seat of the Ashur\u2019xal Empire. Lush blue-green with strange super-seasons from a wobbly orbit.",
+    shape:'rocky', angle:3.8
+  },
+  {
+    id:'taman', name:"Taman", number:5,
+    type:"Gas Giant \u00b7 Rusty-Red (~14 Earths)", period:290,
+    orbitR:210, bodyR:14,
+    color:'#b86030', shineColor:'#d07848', bandColor:'#8a4820',
+    desc:"A rusty-red gas giant. One of seven moons harbors a civilization. Its mass dominates this region of the system.",
+    shape:'gas', angle:0.9, hasMoon:true
+  },
+  {
+    id:'agni', name:"Agni", number:6,
+    type:"Rocky \u00b7 Habitable \u2014 Volcanic", period:392,
+    orbitR:252, bodyR:5.5,
+    color:'#6a9040', shineColor:'#8aaa58',
+    desc:"Volcanic and tropical. A shallow ocean dotted with atolls. The surface bursts with activity. Few people; much fish.",
+    shape:'rocky', angle:1.7
+  },
+  {
+    id:'kivuli', name:"Kivuli", number:7,
+    type:"Rocky \u00b7 Habitable \u2014 Asteroid Ring", period:414,
+    orbitR:294, bodyR:5.5,
+    color:'#4a7888', shineColor:'#6a98a8',
+    desc:"Home of the Nuru. Asteroid rings harbor precious metals that power their advanced technology. Ifu\u2019s world. There are secrets here.",
+    shape:'rocky', hasRing:true, angle:4.5
+  },
+  {
+    id:'ashwin', name:"Ashwin", number:8,
+    type:"Rocky \u00b7 Habitable \u2014 Farmworld", period:616,
+    orbitR:336, bodyR:5.5,
+    color:'#5a9060', shineColor:'#7aaa78',
+    desc:"Temperate. Vast forests, grasslands, oceans. The breadbasket of the empire \u2014 though a native bacterial bloom now threatens that legacy.",
+    shape:'rocky', angle:0.3
+  },
+  {
+    id:'marut', name:"Marut", number:9,
+    type:"Rocky \u00b7 Habitable \u2014 Ice World", period:770,
+    orbitR:378, bodyR:5.5,
+    color:'#7aaac8', shineColor:'#a0cce0',
+    desc:"Ice and blizzard. The last conquered world. Its people still hold to Baudim \u2014 their ancient faith \u2014 and find in its cold, freedom.",
+    shape:'rocky', angle:5.2
+  },
+  {
+    id:'kusari', name:"Kusari", number:10,
+    type:"Gas Giant \u00b7 2.5 Jupiter Masses \u00b7 27 Moons", period:1277,
+    orbitR:430, bodyR:16,
+    color:'#8878a0', shineColor:'#a898c0', bandColor:'#605870',
+    desc:"27 moons. Strange broadcasts originate from its largest ice moon, Itze. No one official will discuss this.",
+    shape:'gas', angle:2.6
+  },
+  {
+    id:'torka', name:"Torka", number:11,
+    type:"Gas Giant \u00b7 Rings \u00b7 1.6 Jupiter Masses", period:18547,
+    orbitR:492, bodyR:15,
+    color:'#a09060', shineColor:'#c0b080', bandColor:'#786840',
+    desc:"Ring system. Intense winds. A landmark of the deep outer system \u2014 and a useful reference point for navigation in the dark.",
+    shape:'gas', hasRing:true, angle:1.1
+  },
+  {
+    id:'kandor', name:"Kandor", number:12,
+    type:"Rocky \u00b7 Outer \u2014 Meteorite-Battered", period:19386,
+    orbitR:546, bodyR:7,
+    color:'#907060', shineColor:'#b09080',
+    desc:"Constantly bombarded by meteorites. 4 Earth masses of rugged, crater-chewed terrain with a thin, battered atmosphere.",
+    shape:'asteroid', angle:3.3
+  },
+  {
+    id:'arusha', name:"Arusha", number:13,
+    type:"Outer Gas Giant \u00b7 Dozens of Moons", period:24796,
+    orbitR:600, bodyR:13,
+    color:'#b07858', shineColor:'#c89878', bandColor:'#885838',
+    desc:"Swirling clouds and storms. Dozens of moons \u2014 some rocky, some icy. A dark anchor at the edge of the system.",
+    shape:'gas', angle:0.7
+  },
+  {
+    id:'soren', name:"Soren", number:14,
+    type:"Ice \u00b7 Outer \u2014 Co-orbits with Asteroid Ko", period:30692,
+    orbitR:652, bodyR:4.5,
+    color:'#c0d8e8', shineColor:'#ddf0f8',
+    desc:"Tiny. Cold. Co-orbits with a similarly sized asteroid called Ko. Not much else is known about what exists this far from Su\u2019hur.",
+    shape:'asteroid', isIcy:true, angle:4.1
+  },
+];
+
+const tepi = {
+  id:'tepi', name:"Tepi",
+  type:"Habitable Moon of Taman",
+  moonOrbitR:28, bodyR:3.8,
+  color:'#80c0d8', shineColor:'#a8e0f0',
+  desc:"Subterranean civilization lit by bioluminescent fungi. The only moon-bound human civilization in the Su\u2019Hur system.",
+  angle:0
+};
+
+const ko = {
+  id:'ko', name:"Ko",
+  type:"Asteroid \u2014 Co-orbits with Soren",
+  moonOrbitR:16, bodyR:2.5,
+  color:'#888890', shineColor:'#aaaab0',
+  desc:"A similarly-sized asteroid in a binary orbit with the ice world Soren. The pair drift together at the farthest reaches of the system.",
+  angle:Math.PI
+};
+
+// ─────────────────────────────────────────────
+// CAMERA
+// ─────────────────────────────────────────────
+let camX, camY, camScale;
+const minScale = 0.2, maxScale = 7;
+
+function initCamera() {
+  const outerR = bodies[bodies.length-1].orbitR;
+  camScale = Math.min(W, H) * 0.42 / outerR;
+  camScale = Math.max(minScale, Math.min(maxScale * 0.5, camScale));
+  camX = W * 0.5;
+  camY = H * 0.5;
+}
+
+// world → screen
+function wx(x) { return camX + x * camScale; }
+function wy(y) { return camY + y * camScale; }
+
+// ─────────────────────────────────────────────
+// PAN & ZOOM
+// ─────────────────────────────────────────────
+let isPanning = false, panStartX, panStartY, panCamX0, panCamY0;
+
+canvas.addEventListener('mousedown', e => {
+  if(e.button !== 0) return;
+  isPanning = true;
+  panStartX = e.clientX; panStartY = e.clientY;
+  panCamX0 = camX; panCamY0 = camY;
+  document.body.classList.add('panning');
+});
+window.addEventListener('mousemove', e => {
+  if(!isPanning) return;
+  camX = panCamX0 + (e.clientX - panStartX);
+  camY = panCamY0 + (e.clientY - panStartY);
+});
+window.addEventListener('mouseup', () => {
+  isPanning = false;
+  document.body.classList.remove('panning');
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : (1/1.1);
+  const mx = e.clientX, my = e.clientY;
+  camX = mx - (mx - camX) * factor;
+  camY = my - (my - camY) * factor;
+  camScale = Math.max(minScale, Math.min(maxScale, camScale * factor));
+  updateScaleBar();
+}, {passive: false});
+
+// Touch
+let touches=[], pinchDist0=null, pinchScale0, touchCamX0, touchCamY0;
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touches = Array.from(e.touches);
+  if(touches.length === 1) {
+    panStartX = touches[0].clientX; panStartY = touches[0].clientY;
+    panCamX0 = camX; panCamY0 = camY;
+  }
+  if(touches.length === 2) {
+    pinchDist0 = Math.hypot(touches[1].clientX-touches[0].clientX, touches[1].clientY-touches[0].clientY);
+    pinchScale0 = camScale;
+    touchCamX0 = camX; touchCamY0 = camY;
+  }
+}, {passive:false});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const ts = Array.from(e.touches);
+  if(ts.length === 1) {
+    camX = panCamX0 + (ts[0].clientX - panStartX);
+    camY = panCamY0 + (ts[0].clientY - panStartY);
+  }
+  if(ts.length === 2 && pinchDist0) {
+    const d = Math.hypot(ts[1].clientX-ts[0].clientX, ts[1].clientY-ts[0].clientY);
+    const factor = d / pinchDist0;
+    camScale = Math.max(minScale, Math.min(maxScale, pinchScale0 * factor));
+    const mx = (ts[0].clientX+ts[1].clientX)/2;
+    const my = (ts[0].clientY+ts[1].clientY)/2;
+    camX = mx - (mx - touchCamX0) * factor;
+    camY = my - (my - touchCamY0) * factor;
+    updateScaleBar();
+  }
+}, {passive:false});
+canvas.addEventListener('touchend', e => {
+  touches = Array.from(e.touches);
+  if(touches.length < 2) pinchDist0 = null;
+  if(touches.length === 1) {
+    panStartX = touches[0].clientX; panStartY = touches[0].clientY;
+    panCamX0 = camX; panCamY0 = camY;
+  }
+});
+
+// ─────────────────────────────────────────────
+// STARS
+// ─────────────────────────────────────────────
+const stars = [];
+for(let i=0;i<420;i++){
+  stars.push({
+    x: Math.random(), y: Math.random(),
+    r: Math.random()*1.2+0.2,
+    a: Math.random()*0.5+0.2,
+    twinkle: Math.random()*Math.PI*2,
+    warm: Math.random() < 0.12
+  });
+}
+
+function drawStars(t) {
+  for(const s of stars) {
+    const a = s.a * (0.7 + 0.3*Math.sin(t*0.0008 + s.twinkle));
+    ctx.beginPath();
+    ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    ctx.fillStyle = s.warm ? `rgba(255,220,160,${a})` : `rgba(200,210,255,${a})`;
+    ctx.fill();
+  }
+}
+
+// ─────────────────────────────────────────────
+// WELLSPRING — translated from SVG bezier curves
+// The bezier control points from my SVG version, now rendered in canvas.
+// All coordinates are in "star-space" (star at origin, upward is negative Y)
+// then transformed via wx()/wy() and camScale.
+// ─────────────────────────────────────────────
+function drawWellspring() {
+  const ox = wx(0), oy = wy(0);
+  const s  = camScale;
+
+  // The three layered bezier arms from my SVG paths, translated to canvas coords.
+  // Each path: M (x0,y0) C (cx1,cy1) (cx2,cy2) (x1,y1) C (cx3,cy3) (cx4,cy4) (x2,y2)
+  // SVG paths were:
+  //   "M 8 -8 C 20 -40 55 -55 70 -35 C 85 -15 65 10 80 25"
+  //   "M 6 -10 C 18 -45 60 -60 78 -38 C 92 -18 70 12 88 28"
+  //   "M 10 -6 C 22 -36 50 -50 64 -32 C 78 -12 62 8 74 22"
+  // Core bright streak:
+  //   "M 5 -6 C 15 -30 40 -42 55 -28 C 68 -15 50 5 62 18"
+
+  const arms = [
+    {
+      pts: [[8,-8],[20,-40],[55,-55],[70,-35],[85,-15],[65,10],[80,25]],
+      color: [[255,180,50], [255,120,20], [200,60,5]],
+      widths: [14, 10, 7],
+      opacities: [0.52, 0.32, 0.18]
+    },
+    {
+      pts: [[6,-10],[18,-45],[60,-60],[78,-38],[92,-18],[70,12],[88,28]],
+      color: [[255,190,60], [255,130,30], [210,70,10]],
+      widths: [10, 7, 5],
+      opacities: [0.32, 0.20, 0.12]
+    },
+    {
+      pts: [[10,-6],[22,-36],[50,-50],[64,-32],[78,-12],[62,8],[74,22]],
+      color: [[255,170,40], [255,110,15], [190,50,0]],
+      widths: [8, 5, 3],
+      opacities: [0.22, 0.14, 0.08]
+    },
+  ];
+
+  // Draw each arm in multiple blur passes (simulate feGaussianBlur by drawing
+  // wider semi-transparent strokes first, then the core sharp stroke)
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for(const arm of arms) {
+    const [p0x,p0y] = arm.pts[0];
+    const [c1x,c1y] = arm.pts[1];
+    const [c2x,c2y] = arm.pts[2];
+    const [p1x,p1y] = arm.pts[3];
+    const [c3x,c3y] = arm.pts[4];
+    const [c4x,c4y] = arm.pts[5];
+    const [p2x,p2y] = arm.pts[6];
+
+    for(let pass=0; pass<3; pass++) {
+      const [r,g,b] = arm.color[pass];
+      const op = arm.opacities[pass];
+      const w  = arm.widths[pass] * Math.max(0.5, s);
+
+      // Soft outer glow pass: draw wider with lower opacity
+      ctx.beginPath();
+      ctx.moveTo(ox + p0x*s, oy + p0y*s);
+      ctx.bezierCurveTo(
+        ox+c1x*s, oy+c1y*s,
+        ox+c2x*s, oy+c2y*s,
+        ox+p1x*s, oy+p1y*s
+      );
+      ctx.bezierCurveTo(
+        ox+c3x*s, oy+c3y*s,
+        ox+c4x*s, oy+c4y*s,
+        ox+p2x*s, oy+p2y*s
+      );
+
+      // Linear gradient along the arm from bright near-star to transparent at tip
+      const grd = ctx.createLinearGradient(
+        ox + p0x*s, oy + p0y*s,
+        ox + p2x*s, oy + p2y*s
+      );
+      grd.addColorStop(0,   `rgba(${r},${g},${b},${op*1.4})`);
+      grd.addColorStop(0.4, `rgba(${r},${g},${b},${op})`);
+      grd.addColorStop(0.75,`rgba(${r},${g},${b},${op*0.5})`);
+      grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+      ctx.strokeStyle = grd;
+      ctx.lineWidth = w;
+      ctx.stroke();
+    }
+  }
+
+  // Bright inner core streak — thinnest, highest contrast
+  // "M 5 -6 C 15 -30 40 -42 55 -28 C 68 -15 50 5 62 18"
+  ctx.beginPath();
+  ctx.moveTo(ox+5*s,  oy-6*s);
+  ctx.bezierCurveTo(
+    ox+15*s, oy-30*s,
+    ox+40*s, oy-42*s,
+    ox+55*s, oy-28*s
+  );
+  ctx.bezierCurveTo(
+    ox+68*s, oy-15*s,
+    ox+50*s, oy+5*s,
+    ox+62*s, oy+18*s
+  );
+  const coreGrd = ctx.createLinearGradient(ox+5*s,oy-6*s, ox+62*s,oy+18*s);
+  coreGrd.addColorStop(0,   'rgba(255,240,160,0.92)');
+  coreGrd.addColorStop(0.45,'rgba(255,210,100,0.7)');
+  coreGrd.addColorStop(0.8, 'rgba(255,180,60,0.3)');
+  coreGrd.addColorStop(1,   'rgba(255,160,40,0)');
+  ctx.strokeStyle = coreGrd;
+  ctx.lineWidth = Math.max(1, 2.5 * s);
+  ctx.stroke();
+
+  // Label
+  const lx = ox + 68*s;
+  const ly = oy - 52*s;
+  ctx.font = `400 ${Math.max(7, Math.min(10, 9*s))}px 'Cinzel', serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = `rgba(255,200,80,${Math.min(0.65, 0.4 + camScale*0.3)})`;
+  ctx.fillText("COSMIC WELLSPRING", lx, ly);
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+// SUN
+// ─────────────────────────────────────────────
+function drawSun() {
+  const sx = wx(0), sy = wy(0);
+  // Glow halos
+  for(let i=4; i>=1; i--) {
+    const g = ctx.createRadialGradient(sx,sy,0, sx,sy, STAR_R*camScale*i*1.8);
+    g.addColorStop(0, `rgba(250,180,60,${0.07/i})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.arc(sx, sy, STAR_R*camScale*i*1.8, 0, Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+  // Sun body
+  const grad = ctx.createRadialGradient(
+    sx - STAR_R*camScale*0.3, sy - STAR_R*camScale*0.3, 0,
+    sx, sy, STAR_R*camScale*1.1
+  );
+  grad.addColorStop(0,   '#fff8e0');
+  grad.addColorStop(0.3, '#f5c060');
+  grad.addColorStop(0.7, '#e08030');
+  grad.addColorStop(1,   '#b05010');
+  ctx.beginPath();
+  ctx.arc(sx, sy, STAR_R*camScale, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+// ─────────────────────────────────────────────
+// ORBITS
+// ─────────────────────────────────────────────
+function drawOrbits() {
+  const cx = wx(0), cy = wy(0);
+  bodies.forEach((b,i) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, b.orbitR * camScale, 0, Math.PI*2);
+    if(i >= 9) {
+      ctx.setLineDash([4*camScale, 6*camScale]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+    } else {
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    }
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+}
+
+// ─────────────────────────────────────────────
+// PLANET ICONS
+// ─────────────────────────────────────────────
+const iconSizes = {
+  ravi:4, uzara:5, samaq:5.5, itzalche:6,
+  taman:13, agni:5.5, kivuli:6, ashwin:5.5,
+  marut:5.5, kusari:14, torka:13,
+  kandor:7, arusha:12, soren:4.5
+};
+
+function drawPlanetIcon(sx, sy, body, iconR) {
+  const r = iconR;
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  if(body.shape === 'gas') {
+    const grad = ctx.createRadialGradient(-r*0.3,-r*0.3,0, 0,0,r*1.1);
+    grad.addColorStop(0, body.shineColor);
+    grad.addColorStop(0.45, body.color);
+    grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+    ctx.beginPath();
+    ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Bands clipped to circle
+    ctx.save();
+    ctx.clip();
+    if(body.bandColor) {
+      for(let b=-2;b<=2;b++){
+        const by = b*r*0.38;
+        const bh = r*0.12;
+        ctx.fillStyle = body.bandColor+'88';
+        ctx.fillRect(-r, by-bh/2, r*2, bh);
+      }
+    }
+    ctx.restore();
+    // Ring (Torka)
+    if(body.hasRing) {
+      ctx.save();
+      ctx.scale(1, 0.28);
+      ctx.beginPath();
+      ctx.arc(0,0,r*1.7,0,Math.PI*2);
+      ctx.strokeStyle = body.shineColor+'aa';
+      ctx.lineWidth = r*0.22;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+  } else if(body.shape === 'asteroid') {
+    const pts = body.isIcy ? 7 : 6;
+    ctx.beginPath();
+    for(let i=0;i<pts;i++){
+      const angle = (i/pts)*Math.PI*2 + (body.id==='kandor'?0.5:0.2);
+      const rr = r * (0.7 + 0.3*((i*3+body.id.charCodeAt(0))%7)/7);
+      const xx = Math.cos(angle)*rr, yy = Math.sin(angle)*rr;
+      if(i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+    }
+    ctx.closePath();
+    const grad = ctx.createRadialGradient(-r*0.2,-r*0.2,0, 0,0,r);
+    grad.addColorStop(0, body.shineColor);
+    grad.addColorStop(1, body.color);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+  } else {
+    // Rocky/standard
+    const grad = ctx.createRadialGradient(-r*0.35,-r*0.35,0, 0,0,r*1.1);
+    grad.addColorStop(0, body.shineColor);
+    grad.addColorStop(0.5, body.color);
+    grad.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.beginPath();
+    ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Kivuli ring
+    if(body.hasRing) {
+      ctx.save();
+      ctx.scale(1, 0.22);
+      ctx.beginPath();
+      ctx.arc(0,0,r*1.85,0,Math.PI*2);
+      ctx.strokeStyle = 'rgba(180,160,100,0.45)';
+      ctx.lineWidth = r*0.38;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function drawLabel(sx, sy, name, iconR) {
+  ctx.font = `400 9px 'Cinzel', serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(200,180,140,0.7)';
+  ctx.fillText(name, sx, sy + iconR + 4);
+}
+
+// ─────────────────────────────────────────────
+// HIT TESTING
+// ─────────────────────────────────────────────
+let screenPositions = [];
+
+canvas.addEventListener('click', e => {
+  if(isPanning) return;
+  if(justOpened) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  let hit = null, bestD = Infinity;
+  for(const sp of screenPositions) {
+    const d = Math.hypot(cx-sp.sx, cy-sp.sy);
+    const hitR = Math.max(sp.r + 4, 12);
+    if(d < hitR && d < bestD) { bestD = d; hit = sp; }
+  }
+  if(hit) {
+    openPopup(hit.body.name, hit.body.type, hit.body.desc, hit.sx, hit.sy);
+  } else {
+    closePopup();
+  }
+});
+
+// ─────────────────────────────────────────────
+// POPUP
+// ─────────────────────────────────────────────
+const popup     = document.getElementById('popup');
+const popupName = document.getElementById('popup-name');
+const popupType = document.getElementById('popup-type');
+const popupDesc = document.getElementById('popup-desc');
+const popupClose= document.getElementById('popup-close');
+
+let popupOpen  = false;
+let justOpened = false;
+
+function openPopup(name, type, desc, sx, sy) {
+  popupName.textContent = name;
+  popupType.textContent = type;
+  popupDesc.textContent = desc;
+  popup.classList.add('open');
+  popupOpen  = true;
+  justOpened = true;
+
+  requestAnimationFrame(() => {
+    const pw = popup.offsetWidth  || 240;
+    const ph = popup.offsetHeight || 130;
+    let x = sx + 18, y = sy - ph/2;
+    if(x + pw > W - 12) x = sx - pw - 18;
+    if(y < 10) y = 10;
+    if(y + ph > H - 10) y = H - ph - 10;
+    popup.style.left = x+'px';
+    popup.style.top  = y+'px';
+    setTimeout(() => { justOpened = false; }, 0);
+  });
+}
+
+function closePopup() {
+  popup.classList.remove('open');
+  popupOpen  = false;
+  justOpened = false;
+}
+
+popupClose.addEventListener('click', function(e) {
+  e.stopPropagation();
+  closePopup();
+});
+popup.addEventListener('click', function(e) {
+  e.stopPropagation();
+});
+document.addEventListener('click', function() {
+  if(justOpened) return;
+  if(popupOpen) closePopup();
+});
+
+// ─────────────────────────────────────────────
+// SCALE BAR
+// ─────────────────────────────────────────────
+function updateScaleBar() {
+  const scaleWorld = 100 / camScale;
+  const auEquiv = (scaleWorld / 174).toFixed(2);
+  document.getElementById('hud-scale-label').textContent = `~${auEquiv} AU`;
+}
+
+// ─────────────────────────────────────────────
+// MAIN DRAW LOOP
+// ─────────────────────────────────────────────
+function draw(t) {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0a0c12';
+  ctx.fillRect(0,0,W,H);
+
+  drawStars(t);
+  drawWellspring();
+  drawOrbits();
+  drawSun();
+
+  screenPositions = [];
+
+  bodies.forEach(b => {
+    const sx = wx(Math.cos(b.angle)*b.orbitR);
+    const sy = wy(Math.sin(b.angle)*b.orbitR);
+    const iconR = iconSizes[b.id] || 6;
+
+    drawPlanetIcon(sx, sy, b, iconR);
+    drawLabel(sx, sy, b.name, iconR);
+    screenPositions.push({id:b.id, sx, sy, r:iconR, body:b});
+
+    // Tepi orbiting Taman
+    if(b.hasMoon) {
+      const moonR = tepi.moonOrbitR;
+      ctx.beginPath();
+      ctx.arc(sx, sy, moonR, 0, Math.PI*2);
+      ctx.setLineDash([2,3]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const msx = sx + Math.cos(tepi.angle)*moonR;
+      const msy = sy + Math.sin(tepi.angle)*moonR;
+      const moonBody = {
+        id:'tepi', name:'Tepi', type:tepi.type,
+        color:tepi.color, shineColor:tepi.shineColor,
+        shape:'rocky', desc:tepi.desc
+      };
+      drawPlanetIcon(msx, msy, moonBody, 3.8);
+      drawLabel(msx, msy, 'Tepi', 3.8);
+      screenPositions.push({id:'tepi', sx:msx, sy:msy, r:3.8, body:moonBody});
+    }
+
+    // Ko co-orbiting Soren
+    if(b.id === 'soren') {
+      const koR = ko.moonOrbitR;
+      ctx.beginPath();
+      ctx.arc(sx, sy, koR, 0, Math.PI*2);
+      ctx.setLineDash([1.5,3]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const ksx = sx + Math.cos(ko.angle)*koR;
+      const ksy = sy + Math.sin(ko.angle)*koR;
+      const koBody = {
+        id:'ko', name:'Ko', type:ko.type,
+        color:ko.color, shineColor:ko.shineColor,
+        shape:'asteroid', desc:ko.desc
+      };
+      drawPlanetIcon(ksx, ksy, koBody, 2.5);
+      drawLabel(ksx, ksy, 'Ko', 2.5);
+      screenPositions.push({id:'ko', sx:ksx, sy:ksy, r:2.5, body:koBody});
+    }
+  });
+
+  // Su'hur hit area (registered last so it's lowest priority when overlapping)
+  screenPositions.push({
+    id:'suhur', sx:wx(0), sy:wy(0), r:STAR_R,
+    body:{
+      name:"Su\u2019Hur", type:"K-Type Star \u00b7 Orange Dwarf",
+      desc:"The warm orange heart of this system. Its superluminal phenomenon \u2014 the Cosmic Wellspring \u2014 is the key to FTL travel and the engine of the novel\u2019s central conflict."
+    }
+  });
+
+  updateScaleBar();
+  requestAnimationFrame(draw);
+}
+
+// ─────────────────────────────────────────────
+// ANIMATION (moons + slow orbital drift)
+// ─────────────────────────────────────────────
+let lastT = 0;
+function animateMoons(t) {
+  const dt = t - lastT; lastT = t;
+  tepi.angle += 0.00015 * dt;
+  ko.angle   += 0.0002  * dt;
+  bodies.forEach((b,i) => {
+    b.angle += (0.00002 / Math.sqrt(i+1)) * dt;
+  });
+  requestAnimationFrame(animateMoons);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+initCamera();
+requestAnimationFrame(draw);
+requestAnimationFrame(animateMoons);
+
+})();
+</script>
+</body>
+</html>
