@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
 <title>Su'Hur System — Echo, Drift</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{background:#06080f}*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0c12; --accent:#f4a03a;
   --popup-bg:rgba(10,12,22,0.97);
@@ -45,42 +46,35 @@ canvas#cv{display:block;width:100%;height:100%}
 .lr{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid;background:transparent}
 .lw{width:14px;height:8px;flex-shrink:0;background:linear-gradient(90deg,rgba(255,160,40,.85),rgba(255,200,80,.15));border-radius:2px}
 
-/* ── Timeline ── */
-#hud-tl{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,12,22,.9);border:1px solid rgba(200,180,140,.14);border-radius:8px;padding:10px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:340px;pointer-events:auto}
-
-#tl-year{font-family:var(--fd);font-size:13px;letter-spacing:.1em;color:rgba(240,220,180,.85);text-align:center;min-height:20px}
-#tl-year span{color:var(--accent)}
-#tl-year em{font-style:normal;font-size:10px;letter-spacing:.12em;color:rgba(200,180,140,.45);margin-left:6px}
-
-/* calendar mode toggle */
-#cal-toggle{display:flex;gap:4px}
-.cal-btn{font-family:var(--fd);font-size:9px;letter-spacing:.1em;color:rgba(200,180,140,.45);background:none;border:1px solid rgba(200,180,140,.15);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .12s;text-transform:uppercase}
-.cal-btn.active{color:var(--accent);border-color:var(--accent)}
-.cal-btn:hover:not(.active){color:rgba(200,180,140,.8);border-color:rgba(200,180,140,.4)}
-
-#tl-scrubber{width:100%;cursor:pointer;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:rgba(200,180,140,.18);outline:none}
-#tl-scrubber::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 6px rgba(244,160,58,.4)}
-#tl-scrubber::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
-
-#epoch-btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:1px}
-.ep-btn{font-family:var(--fd);font-size:8px;letter-spacing:.07em;color:rgba(200,180,140,.5);background:none;border:1px solid rgba(200,180,140,.15);border-radius:3px;padding:2px 7px;cursor:pointer;transition:all .12s}
-.ep-btn:hover{color:rgba(240,220,180,.9);border-color:rgba(200,180,140,.5)}
-
-#tl-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
-.tl-btn{background:none;border:1px solid rgba(200,180,140,.2);color:rgba(200,180,140,.7);border-radius:4px;width:30px;height:26px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:var(--fd)}
-.tl-btn:hover{border-color:rgba(200,180,140,.6);color:rgba(240,220,180,.9);background:rgba(200,180,140,.06)}
-.tl-btn.active{border-color:var(--accent);color:var(--accent)}
-#speed-select{font-family:var(--fd);font-size:9px;letter-spacing:.08em;color:rgba(200,180,140,.8);background:rgba(10,12,22,.95);border:1px solid rgba(200,180,140,.2);border-radius:4px;padding:3px 6px;cursor:pointer;height:26px;outline:none;min-width:80px}
-#speed-select:focus{border-color:var(--accent)}
-#speed-select option{background:#0d0f1a;color:rgba(200,180,140,.9)}
-#goto-wrap{display:flex;align-items:center;gap:5px;margin-top:2px}
-#goto-wrap label{font-family:var(--fd);font-size:8px;letter-spacing:.1em;color:rgba(200,180,140,.4);text-transform:uppercase;white-space:nowrap}
-#goto-input{font-family:var(--fd);font-size:10px;color:rgba(240,220,180,.85);background:rgba(10,12,22,.95);border:1px solid rgba(200,180,140,.2);border-radius:4px;padding:2px 7px;width:90px;outline:none;height:24px}
-#goto-input:focus{border-color:var(--accent)}
-#goto-input::placeholder{color:rgba(200,180,140,.25);font-size:9px}
-#goto-btn{font-family:var(--fd);font-size:8px;letter-spacing:.08em;color:rgba(200,180,140,.6);background:none;border:1px solid rgba(200,180,140,.18);border-radius:4px;padding:2px 9px;cursor:pointer;height:24px;transition:all .12s;text-transform:uppercase;white-space:nowrap}
-#goto-btn:hover{color:rgba(240,220,180,.9);border-color:rgba(200,180,140,.5)}
-
+/* ── Persistent bottom bar ── */
+#bar{position:fixed;bottom:0;left:0;right:0;height:50px;background:rgba(8,10,18,.97);border-top:1px solid rgba(200,180,140,.1);display:flex;align-items:center;gap:10px;padding:0 14px;z-index:100;pointer-events:auto}
+.bar-btn{background:none;border:1px solid rgba(200,180,140,.2);color:rgba(200,180,140,.62);border-radius:4px;height:28px;padding:0 10px;cursor:pointer;font-family:var(--fd);font-size:10px;letter-spacing:.04em;display:flex;align-items:center;gap:5px;transition:all .12s;white-space:nowrap;flex-shrink:0}
+.bar-btn:hover{border-color:rgba(200,180,140,.55);color:rgba(240,220,180,.92)}
+.bar-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(244,160,58,.05)}
+#bar-rew{padding:0 8px;font-size:14px;border:none;color:rgba(200,180,140,.45)}
+#bar-rew:hover{color:rgba(240,220,180,.85);background:none;border:none}
+#bar-scrub{flex:1;-webkit-appearance:none;appearance:none;height:2px;border-radius:1px;background:rgba(200,180,140,.14);outline:none;cursor:pointer;min-width:0}
+#bar-scrub::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 6px rgba(244,160,58,.5)}
+#bar-scrub::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+#bar-date{font-family:var(--fd);font-size:11px;letter-spacing:.08em;color:rgba(240,220,180,.72);white-space:nowrap;flex-shrink:0}
+/* ── Floating options panel ── */
+#opts{position:fixed;background:rgba(8,10,18,.97);border:1px solid rgba(200,180,140,.14);border-radius:8px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;min-width:300px;max-width:400px;z-index:200;pointer-events:auto;backdrop-filter:blur(14px);box-shadow:0 8px 40px rgba(0,0,0,.7);opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease,visibility 0s linear .18s}
+#opts.open{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .18s ease,transform .18s ease,visibility 0s linear 0s}
+.opt-section{display:flex;flex-direction:column;gap:6px}
+.opt-label{font-family:var(--fd);font-size:7.5px;letter-spacing:.18em;color:rgba(200,180,140,.3);text-transform:uppercase}
+.opt-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.opt-divider{width:100%;height:1px;background:rgba(200,180,140,.07)}
+.calb,.ep{font-family:var(--fd);font-size:8px;letter-spacing:.09em;color:rgba(200,180,140,.45);background:none;border:1px solid rgba(200,180,140,.14);border-radius:3px;padding:3px 9px;cursor:pointer;transition:all .12s;text-transform:uppercase}
+.calb:hover,.ep:hover{color:rgba(240,220,180,.9);border-color:rgba(200,180,140,.5)}
+.calb.on{color:var(--accent);border-color:rgba(244,160,58,.5);background:rgba(244,160,58,.05)}
+.ep-row{display:flex;gap:4px;flex-wrap:wrap}
+#bar-spd{font-family:var(--fd);font-size:8px;letter-spacing:.06em;color:rgba(200,180,140,.7);background:rgba(8,10,18,.98);border:1px solid rgba(200,180,140,.18);border-radius:4px;padding:0 7px;cursor:pointer;height:24px;outline:none}
+#bar-spd option{background:#080c18}
+#goto-in{font-family:var(--fd);font-size:9px;color:rgba(240,220,180,.82);background:rgba(8,10,18,.98);border:1px solid rgba(200,180,140,.18);border-radius:4px;padding:0 8px;flex:1;height:24px;outline:none;min-width:0}
+#goto-in:focus{border-color:var(--accent)}
+#goto-in::placeholder{color:rgba(200,180,140,.18)}
+#goto-go{font-family:var(--fd);font-size:8px;letter-spacing:.08em;color:rgba(200,180,140,.5);background:none;border:1px solid rgba(200,180,140,.15);border-radius:4px;padding:0 10px;cursor:pointer;height:24px;transition:all .12s;text-transform:uppercase;white-space:nowrap}
+#goto-go:hover{color:rgba(240,220,180,.9);border-color:rgba(200,180,140,.5)}
 /* ── Popup ── */
 #popup{position:fixed;z-index:9999;min-width:210px;max-width:290px;background:var(--popup-bg);border:1px solid var(--popup-border);border-radius:6px;padding:16px 18px 14px;box-shadow:0 8px 40px rgba(0,0,0,.75);backdrop-filter:blur(8px);opacity:0;visibility:hidden;transform:translateY(5px);transition:opacity .16s ease,transform .16s ease,visibility 0s linear .16s;pointer-events:auto}
 #popup.open{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .16s ease,transform .16s ease,visibility 0s linear 0s}
@@ -116,39 +110,55 @@ canvas#cv{display:block;width:100%;height:100%}
   </div>
 </div>
 
-<div id="hud-tl">
-  <div id="tl-year"><span>CE 3700</span></div>
-  <div id="cal-toggle">
-    <button class="cal-btn active" data-mode="CE">CE</button>
-    <button class="cal-btn" data-mode="PC">PC</button>
-    <button class="cal-btn" data-mode="PE">PE</button>
+<!-- Floating options panel -->
+<div id="opts">
+  <div class="opt-section">
+    <div class="opt-label">Speed</div>
+    <div class="opt-row">
+      <select id="bar-spd">
+        <option value="0.000311">Real-time &mdash; 1 day = 26 hrs</option>
+        <option value="1">1 day / sec</option>
+        <option value="29">0.1 yr / sec</option>
+        <option value="290" selected>1 yr / sec</option>
+        <option value="1450">5 yr / sec</option>
+        <option value="14500">50 yr / sec</option>
+        <option value="145000">500 yr / sec</option>
+      </select>
+    </div>
   </div>
-  <input type="range" id="tl-scrubber" min="0" max="2191500" value="50" step="365">
-  <div id="epoch-btns"></div>
-  <div id="tl-controls">
-    <button class="tl-btn" id="btn-rew" title="Rewind to start">&#x23EE;</button>
-    <button class="tl-btn active" id="btn-play">&#x25B6;</button>
-    <select id="speed-select" title="Playback speed">
-      <option value="0">Paused</option>
-      <option value="29">0.1x &mdash; 1 yr / 10s</option>
-      <option value="58">0.2x &mdash; 1 yr / 5s</option>
-      <option value="145">0.5x &mdash; 1 yr / 2s</option>
-      <option value="290">1x &mdash; 1 yr / s</option>
-      <option value="580">2x &mdash; 2 yrs / s</option>
-      <option value="1450">5x &mdash; 5 yrs / s</option>
-      <option value="2900">10x &mdash; 10 yrs / s</option>
-      <option value="7250">25x &mdash; 25 yrs / s</option>
-      <option value="14500">50x &mdash; 50 yrs / s</option>
-      <option value="29000">100x &mdash; 100 yrs / s</option>
-      <option value="145000">500x &mdash; 500 yrs / s</option>
-    </select>
+  <div class="opt-divider"></div>
+  <div class="opt-section">
+    <div class="opt-label">Calendar</div>
+    <div class="opt-row">
+      <button class="calb on" data-m="CE">CE</button>
+      <button class="calb" data-m="PC">PC</button>
+      <button class="calb" data-m="PE">PE</button>
+    </div>
   </div>
-  <div id="goto-wrap">
-    <label for="goto-input">Go to year</label>
-    <input id="goto-input" type="text" placeholder="e.g. PE 4409 or CE 9600" spellcheck="false">
-    <button id="goto-btn">Go</button>
+  <div class="opt-divider"></div>
+  <div class="opt-section">
+    <div class="opt-label">Jump to epoch</div>
+    <div class="opt-row ep-row" id="ep-row"></div>
+  </div>
+  <div class="opt-divider"></div>
+  <div class="opt-section">
+    <div class="opt-label">Go to year</div>
+    <div class="opt-row">
+      <input id="goto-in" type="text" placeholder="CE 7100 &middot; PC 3000 &middot; PE 38" spellcheck="false">
+      <button id="goto-go">Go</button>
+    </div>
   </div>
 </div>
+
+<!-- Persistent bottom bar -->
+<div id="bar">
+  <button class="bar-btn" id="bar-rew">&#x23EE;</button>
+  <button class="bar-btn" id="bar-play">&#x25B6;</button>
+  <input type="range" id="bar-scrub" min="0" max="2556750" value="0" step="365">
+  <div id="bar-date">CE 3700</div>
+  <button class="bar-btn" id="bar-opts">Options &#x25B4;</button>
+</div>
+
 
 <div id="popup">
   <button id="popup-close">&#x00D7;</button>
@@ -164,14 +174,14 @@ canvas#cv{display:block;width:100%;height:100%}
 'use strict';
 
 // ── CALENDAR CONSTANTS ────────────────────────────────────────────────
-const CE_COLLAPSE   = 3100;       // PC = 0
-const KAEL_BORN_CE  = 6100;       // PE = 1 (Kael AkShur born, empire founded)
-const START_CE      = 3700;       // sim day 0
+const CE_COLLAPSE   = 4100;       // PC = 0
+const KAEL_BORN_CE  = 7100;       // PE = 1 (Kael AkShur born, empire founded)
+const START_CE      = 3700;       // sim day 0 = Second Diaspora arrives
 const EARTH_YR_DAYS = 365.25;     // days in an Earth year
 const ITZALCHE_DAYS = 290;        // days in one PE year (Itzalche orbit)
 const PE_PER_EARTH  = EARTH_YR_DAYS / ITZALCHE_DAYS; // ~1.2595
-const MAX_SIM_DAYS  = 2191500;    // 9700 CE
-const KAEL_SIM_DAY  = 876600;     // 6100 CE = PE Year 1
+const MAX_SIM_DAYS  = 2556750;    // 10700 CE
+const KAEL_SIM_DAY  = 1241850;    // 7100 CE = PE Year 1
 
 // simDay → CE (fractional)
 function sdToCE(sd){ return START_CE + sd / EARTH_YR_DAYS; }
@@ -210,11 +220,10 @@ function formatYear(sd){
 
 function updateYearDisplay(sd){
   const f = formatYear(sd);
-  const el = document.getElementById('tl-year');
-  const dayUnit = f.isPE ? 'Itz. Day' : 'Day';
-  el.innerHTML = '<span>' + f.year + '</span> &nbsp;&middot;&nbsp; '
-    + dayUnit + ' <span>' + f.day + '</span>'
-    + (f.era ? '<em>' + f.era + '</em>' : '');
+  const el = document.getElementById('bar-date');
+  if(!el) return;
+  const dayUnit = f.isPE ? 'Itz.Day' : 'Day';
+  el.textContent = f.year + ' · ' + dayUnit + ' ' + f.day;
 }
 
 // ── CANVAS ────────────────────────────────────────────────────────────
@@ -234,33 +243,33 @@ window.addEventListener('resize', resize);
 // ── PLANET DATA ───────────────────────────────────────────────────────
 const STAR_R = 22;
 const bodies = [
-  {id:'ravi',     name:'Ravi',     type:'Rocky \u00b7 Uninhabitable',              period:18,    orbitR:68,  bodyR:3.5, color:'#b09888',shineColor:'#d0b8a8',shape:'rocky',   angle:1.3963,
+  {id:'ravi',     name:'Ravi',     type:'Rocky \u00b7 Uninhabitable',              period:18,    orbitR:68,  bodyR:3.5, color:'#c8b4a0',shineColor:'#e0ccc0',shape:'rocky',   angle:1.3963, mag:4.2,
    desc:"Tiny, barren. Methane-dense atmosphere clings to its crater-scored surface. No value to the empire but proximity."},
-  {id:'uzara',    name:'Uzara',    type:'Rocky \u00b7 Uninhabitable',              period:73,    orbitR:100, bodyR:5,   color:'#b8a060',shineColor:'#d8c080',shape:'rocky',   angle:3.4428,
+  {id:'uzara',    name:'Uzara',    type:'Rocky \u00b7 Uninhabitable',              period:73,    orbitR:100, bodyR:5,   color:'#d4cc88',shineColor:'#e8e0a8',shape:'rocky',   angle:3.4428, mag:3.8,
    desc:"Acid oceans eat at deep canyons. A thick CO\u2082 atmosphere \u2014 a portrait of ruin before the ruins."},
-  {id:'samaq',    name:'Samaq',    type:'Rocky \u00b7 Once-Inhabited',             period:196,   orbitR:138, bodyR:5.5, color:'#c09070',shineColor:'#d8a878',shape:'rocky',   angle:3.2057,
+  {id:'samaq',    name:'Samaq',    type:'Rocky \u00b7 Once-Inhabited',             period:196,   orbitR:138, bodyR:5.5, color:'#c4a87c',shineColor:'#d8c09a',shape:'rocky',   angle:3.2057, mag:3.5,
    desc:"Blackened ruins dot a desert that used to be a civilization. Exterminated in the early conquests of the Ashur\u2019xal Empire."},
-  {id:'itzalche', name:'Itzalche', type:'Rocky \u00b7 Habitable \u2014 Imperial Capital', period:290, orbitR:174, bodyR:6, color:'#3a8860',shineColor:'#5aaa78',shape:'rocky', angle:1.5166,
+  {id:'itzalche', name:'Itzalche', type:'Rocky \u00b7 Habitable \u2014 Imperial Capital', period:290, orbitR:174, bodyR:6, color:'#3a8860',shineColor:'#5aaa78',shape:'rocky', angle:1.5166, mag:2.2,
    desc:"The jewel of the system. Seat of the Ashur\u2019xal Empire. Lush blue-green with three moons and strange super-seasons. Calendar standard of the PE era."},
-  {id:'taman',    name:'Taman',    type:'Gas Giant \u00b7 Rusty-Red (~14 Earths)', period:290,   orbitR:210, bodyR:14,  color:'#b86030',shineColor:'#d07848',shape:'gas',     angle:1.5166, bandColor:'#8a4820', hasMoon:true,
+  {id:'taman',    name:'Taman',    type:'Gas Giant \u00b7 Rusty-Red (~14 Earths)', period:290,   orbitR:210, bodyR:14,  color:'#d08060',shineColor:'#e09878',shape:'gas',     angle:1.5166, mag:1.2, bandColor:'#8a4820', hasMoon:true,
    desc:"A rusty-red gas giant. One of seven moons harbors a civilization. Its mass dominates this region of the system."},
-  {id:'agni',     name:'Agni',     type:'Rocky \u00b7 Habitable \u2014 Volcanic',  period:392,   orbitR:252, bodyR:5.5, color:'#6a9040',shineColor:'#8aaa58',shape:'rocky',   angle:4.7444,
+  {id:'agni',     name:'Agni',     type:'Rocky \u00b7 Habitable \u2014 Volcanic',  period:392,   orbitR:252, bodyR:5.5, color:'#98b870',shineColor:'#b0d090',shape:'rocky',   angle:4.7444, mag:2.8,
    desc:"Volcanic and tropical. A shallow ocean dotted with atolls. The surface bursts with activity. Few people; much fish."},
-  {id:'kivuli',   name:'Kivuli',   type:'Rocky \u00b7 Habitable \u2014 Asteroid Ring', period:414, orbitR:294, bodyR:5.5, color:'#4a7888',shineColor:'#6a98a8',shape:'rocky', angle:5.5243, hasRing:true,
+  {id:'kivuli',   name:'Kivuli',   type:'Rocky \u00b7 Habitable \u2014 Asteroid Ring', period:414, orbitR:294, bodyR:5.5, color:'#88aac0',shineColor:'#a8cad8',shape:'rocky', angle:5.5243, mag:2.5, hasRing:true,
    desc:"Home of the Nuru. Asteroid rings harbor precious metals that power their advanced technology. Ifu\u2019s world."},
-  {id:'ashwin',   name:'Ashwin',   type:'Rocky \u00b7 Habitable \u2014 Farmworld',  period:616,   orbitR:336, bodyR:5.5, color:'#5a9060',shineColor:'#7aaa78',shape:'rocky',   angle:4.7328,
+  {id:'ashwin',   name:'Ashwin',   type:'Rocky \u00b7 Habitable \u2014 Farmworld',  period:616,   orbitR:336, bodyR:5.5, color:'#90c080',shineColor:'#aad89a',shape:'rocky',   angle:4.7328, mag:2.9,
    desc:"Temperate. Vast forests, grasslands, oceans. The empire\u2019s breadbasket \u2014 threatened by a native bacterial bloom."},
-  {id:'marut',    name:'Marut',    type:'Rocky \u00b7 Habitable \u2014 Ice World',  period:770,   orbitR:378, bodyR:5.5, color:'#7aaac8',shineColor:'#a0cce0',shape:'rocky',   angle:2.5296,
+  {id:'marut',    name:'Marut',    type:'Rocky \u00b7 Habitable \u2014 Ice World',  period:770,   orbitR:378, bodyR:5.5, color:'#a8c8e0',shineColor:'#c8e4f4',shape:'rocky',   angle:2.5296, mag:3.1,
    desc:"Ice and blizzard. The last conquered world. Its people still hold to Baudim \u2014 their ancient faith \u2014 and find in its cold, freedom."},
-  {id:'kusari',   name:'Kusari',   type:'Gas Giant \u00b7 2.5 Jupiter Masses \u00b7 27 Moons', period:1277, orbitR:430, bodyR:16, color:'#8878a0',shineColor:'#a898c0',shape:'gas', angle:3.2277, bandColor:'#605870',
+  {id:'kusari',   name:'Kusari',   type:'Gas Giant \u00b7 2.5 Jupiter Masses \u00b7 27 Moons', period:1277, orbitR:430, bodyR:16, color:'#9888c0',shineColor:'#b8a8d8',shape:'gas', angle:3.2277, mag:2.0, bandColor:'#605870',
    desc:"27 moons. Strange broadcasts originate from its largest ice moon, Itze. No official will discuss this."},
-  {id:'torka',    name:'Torka',    type:'Gas Giant \u00b7 Rings \u00b7 1.6 Jupiter Masses', period:18547, orbitR:492, bodyR:15, color:'#a09060',shineColor:'#c0b080',shape:'gas', angle:5.1083, bandColor:'#786840', hasRing:true,
+  {id:'torka',    name:'Torka',    type:'Gas Giant \u00b7 Rings \u00b7 1.6 Jupiter Masses', period:18547, orbitR:492, bodyR:15, color:'#c8b078',shineColor:'#e0cc98',shape:'gas', angle:5.1083, mag:3.4, bandColor:'#786840', hasRing:true,
    desc:"Ring system. Intense winds. A landmark of the deep outer system and a navigation reference in the dark."},
-  {id:'kandor',   name:'Kandor',   type:'Rocky \u00b7 Outer \u2014 Meteorite-Battered', period:19386, orbitR:546, bodyR:7, color:'#907060',shineColor:'#b09080',shape:'asteroid', angle:5.2869,
+  {id:'kandor',   name:'Kandor',   type:'Rocky \u00b7 Outer \u2014 Meteorite-Battered', period:19386, orbitR:546, bodyR:7, color:'#a89080',shineColor:'#c0aaaa',shape:'asteroid', angle:5.2869, mag:5.1,
    desc:"Constantly bombarded by meteorites. 4 Earth masses of rugged, crater-chewed terrain."},
-  {id:'arusha',   name:'Arusha',   type:'Outer Gas Giant \u00b7 Dozens of Moons',  period:24796, orbitR:600, bodyR:13,  color:'#b07858',shineColor:'#c89878',shape:'gas',     angle:0.5909, bandColor:'#885838',
+  {id:'arusha',   name:'Arusha',   type:'Outer Gas Giant \u00b7 Dozens of Moons',  period:24796, orbitR:600, bodyR:13,  color:'#c09878',shineColor:'#d8b898',shape:'gas',     angle:0.5909, bandColor:'#885838',
    desc:"Swirling clouds and storms. Dozens of moons. A dark anchor at the edge of the system."},
-  {id:'soren',    name:'Soren',    type:'Ice \u00b7 Outer \u2014 Co-orbits with Ko', period:30692, orbitR:652, bodyR:4.5, color:'#c0d8e8',shineColor:'#ddf0f8',shape:'asteroid', angle:4.9566, isIcy:true, hasSat:true,
+  {id:'soren',    name:'Soren',    type:'Ice \u00b7 Outer \u2014 Co-orbits with Ko', period:30692, orbitR:652, bodyR:4.5, color:'#d8ecf8',shineColor:'#eef8ff',shape:'asteroid', angle:4.9566, mag:5.8, isIcy:true, hasSat:true,
    desc:"Tiny. Cold. Co-orbits with the asteroid Ko at the farthest reaches of Su\u2019hur."},
 ];
 bodies.forEach(b => b.omega = (2*Math.PI)/b.period);
@@ -349,7 +358,7 @@ function drawOrbits(){
 }
 
 // ── PLANET ICONS ──────────────────────────────────────────────────────
-const iconSz={ravi:4,uzara:5,samaq:5.5,itzalche:6,taman:13,agni:5.5,kivuli:6,ashwin:5.5,marut:5.5,kusari:14,torka:13,kandor:7,arusha:12,soren:4.5};
+function iconR(b){ return Math.max(3, 9.5-(b.mag||3)); }
 function drawIcon(sx,sy,body,r){
   ctx.save();ctx.translate(sx,sy);
   if(body.shape==='gas'){
@@ -398,97 +407,107 @@ canvas.addEventListener('click',e=>{
   else closePopup();
 });
 
-// ── TIMELINE ──────────────────────────────────────────────────────────
-let simDay=50,playing=false,speed=0;  // start mid-orbit so inner planets aren't stacked
-const scrub    = document.getElementById('tl-scrubber');
-const btnPlay  = document.getElementById('btn-play');
-const speedSel = document.getElementById('speed-select');
+// ── TIMELINE ─────────────────────────────────────────────────────────────────────────
+let simDay=0,playing=false,speed=290;
+const scrub=document.getElementById('bar-scrub');
+const btnPlay=document.getElementById('bar-play');
+const barDate=document.getElementById('bar-date');
 
-function setSpeed(s){
-  speed=s; playing=s>0;
-  btnPlay.innerHTML = playing ? '&#x23F8;' : '&#x25B6;';
-  btnPlay.classList.toggle('active', playing);
-  // Sync dropdown to match (find closest option)
-  let best=null, bestDiff=Infinity;
-  for(const opt of speedSel.options){
-    const v=parseFloat(opt.value), d=Math.abs(v-s);
-    if(d<bestDiff){bestDiff=d;best=opt}
-  }
-  if(best) speedSel.value=best.value;
+function setPlay(v){
+  playing=v;btnPlay.innerHTML=v?'&#x23F8;':'&#x25B6;';btnPlay.classList.toggle('on',v);
 }
-setSpeed(0);
+setPlay(false);
 
-document.getElementById('btn-rew').addEventListener('click',()=>{simDay=0;setSpeed(0);updateScrubber()});
-btnPlay.addEventListener('click',()=>setSpeed(playing?0:parseFloat(speedSel.value)||290));
+document.getElementById('bar-rew').addEventListener('click',()=>{simDay=0;setPlay(false);updateScrubber()});
+btnPlay.addEventListener('click',()=>setPlay(!playing));
 
-// Speed dropdown
-speedSel.addEventListener('change',()=>{
-  const v=parseFloat(speedSel.value);
-  if(v===0){ setSpeed(0); }
-  else { speed=v; playing=true; btnPlay.innerHTML='&#x23F8;'; btnPlay.classList.add('active'); }
+document.getElementById('bar-spd').addEventListener('change',function(){
+  speed=parseFloat(this.value);
+  if(speed>0&&!playing)setPlay(true);
+  if(speed===0)setPlay(false);
 });
 
-scrub.addEventListener('input',()=>{simDay=parseFloat(scrub.value);updateScrubber()});
-scrub.addEventListener('mousedown',()=>{if(playing){setSpeed(0)}});
+scrub.addEventListener('input',()=>{simDay=parseFloat(scrub.value);setPlay(false);updateScrubber()});
+scrub.addEventListener('mousedown',()=>setPlay(false));
 
-function updateScrubber(){scrub.value=String(simDay);updateYearDisplay(simDay)}
+function updateScrubber(){
+  scrub.value=String(simDay);
+  updateYearDisplay(simDay);
+  const f=formatYear(simDay);
+  barDate.textContent=f.year+' · Day '+f.day;
+}
 
-// ── GO TO YEAR ────────────────────────────────────────────────────────
-// Accepts:  CE 9600  |  PC 3000  |  PE 4409  |  bare number (treated as CE)
-function parseGotoInput(raw){
-  const s = raw.trim().toUpperCase().replace(/,/g,'');
-  const numPart = parseFloat(s.replace(/^(CE|PC|PE)\s*/,''));
-  if(isNaN(numPart)) return null;
-
-  let targetCE;
-  if(s.startsWith('PE')){
-    // PE → CE: KAEL_BORN_CE + (pe-1)/PE_PER_EARTH
-    targetCE = KAEL_BORN_CE + (numPart - 1) / PE_PER_EARTH;
-  } else if(s.startsWith('PC')){
-    // PC → CE: CE_COLLAPSE + pc
-    targetCE = CE_COLLAPSE + numPart;
-  } else {
-    // CE or bare number
-    targetCE = numPart;
+// ── OPTS PANEL
+const optsPanel=document.getElementById('opts');
+const optsBtn=document.getElementById('bar-opts');
+let optsOpen=false;
+function positionOpts(){
+  const rect=optsBtn.getBoundingClientRect(),pw=optsPanel.offsetWidth||320;
+  let left=rect.right-pw;if(left<8)left=8;
+  optsPanel.style.left=left+'px';
+  optsPanel.style.bottom=(window.innerHeight-rect.top+8)+'px';
+  optsPanel.style.top='auto';
+}
+optsBtn.addEventListener('click',e=>{
+  e.stopPropagation();optsOpen=!optsOpen;
+  optsPanel.classList.toggle('open',optsOpen);optsBtn.classList.toggle('on',optsOpen);
+  optsBtn.innerHTML=optsOpen?'Options &#x25BE;':'Options &#x25B4;';
+  if(optsOpen)positionOpts();
+});
+document.addEventListener('click',e=>{
+  if(optsOpen&&!optsPanel.contains(e.target)&&e.target!==optsBtn){
+    optsOpen=false;optsPanel.classList.remove('open');optsBtn.classList.remove('on');
+    optsBtn.innerHTML='Options &#x25B4;';
   }
-  const sd = (targetCE - START_CE) * EARTH_YR_DAYS;
-  return Math.max(0, Math.min(MAX_SIM_DAYS, Math.round(sd)));
-}
+});
+optsPanel.addEventListener('click',e=>e.stopPropagation());
 
-document.getElementById('goto-btn').addEventListener('click', doGoto);
-document.getElementById('goto-input').addEventListener('keydown', e=>{if(e.key==='Enter')doGoto()});
-
-function doGoto(){
-  const inp = document.getElementById('goto-input');
-  const sd = parseGotoInput(inp.value);
-  if(sd===null){ inp.style.borderColor='rgba(220,80,60,.7)'; setTimeout(()=>inp.style.borderColor='',1000); return; }
-  simDay=sd; setSpeed(0); updateScrubber();
-  inp.value=''; inp.style.borderColor='';
-}
-
-// Calendar mode toggle
-document.querySelectorAll('.cal-btn').forEach(btn=>{
+// Calendar
+document.querySelectorAll('.calb').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    calMode=btn.dataset.mode;
-    document.querySelectorAll('.cal-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    updateYearDisplay(simDay);
+    calMode=btn.dataset.m;
+    document.querySelectorAll('.calb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');updateYearDisplay(simDay);updateScrubber();
   });
 });
 
-// Epoch jump buttons
+// Go to year
+function parseGotoInput(raw){
+  const s=raw.trim().toUpperCase().replace(/,/g,'');
+  const n=parseFloat(s.replace(/^(CE|PC|PE)\s*/,''));
+  if(isNaN(n))return null;
+  let ce;
+  if(s.startsWith('PE'))ce=KAEL_BORN_CE+(n-1)/PE_PER_EARTH;
+  else if(s.startsWith('PC'))ce=CE_COLLAPSE+n;
+  else ce=n;
+  return Math.max(0,Math.min(MAX_SIM_DAYS,Math.round((ce-START_CE)*EARTH_YR_DAYS)));
+}
+document.getElementById('goto-go').addEventListener('click',doGoto);
+document.getElementById('goto-in').addEventListener('keydown',e=>{if(e.key==='Enter')doGoto()});
+function doGoto(){
+  const inp=document.getElementById('goto-in');
+  const sd=parseGotoInput(inp.value);
+  if(sd===null){inp.style.borderColor='rgba(220,80,60,.7)';setTimeout(()=>inp.style.borderColor='',1000);return}
+  simDay=sd;setPlay(false);updateScrubber();inp.value='';
+  optsOpen=false;optsPanel.classList.remove('open');optsBtn.classList.remove('on');
+  optsBtn.innerHTML='Options &#x25B4;';
+}
+
+// Epoch buttons
 const EPOCHS=[
-  {label:'3700 CE',        day:0},
-  {label:'PC 0',           day:Math.max(0,Math.round((CE_COLLAPSE-START_CE)*EARTH_YR_DAYS))},
-  {label:'PE 1 — Kael',    day:KAEL_SIM_DAY},
-  {label:'The Gathering',  day:Math.round((9600-START_CE)*EARTH_YR_DAYS)},
-  {label:'PE 4535',        day:MAX_SIM_DAYS},
+  {label:'Diaspora',day:0},{label:'PC 0',day:146100},
+  {label:'PE 1 — Kael',day:KAEL_SIM_DAY},
+  {label:'The Gathering',day:2520225},{label:'PE 4535',day:MAX_SIM_DAYS},
 ];
-const epCon=document.getElementById('epoch-btns');
+const epochContainer=document.getElementById('ep-row');
 EPOCHS.forEach(ep=>{
-  const b=document.createElement('button');b.className='ep-btn';b.textContent=ep.label;
-  b.addEventListener('click',()=>{simDay=Math.max(0,ep.day);setSpeed(0,'PAUSED');updateScrubber()});
-  epCon.appendChild(b);
+  const b=document.createElement('button');b.className='ep';b.textContent=ep.label;
+  b.addEventListener('click',()=>{
+    simDay=ep.day;setPlay(false);updateScrubber();
+    optsOpen=false;optsPanel.classList.remove('open');optsBtn.classList.remove('on');
+    optsBtn.innerHTML='Options &#x25B4;';
+  });
+  epochContainer.appendChild(b);
 });
 
 // ── SCALE BAR ─────────────────────────────────────────────────────────
@@ -519,7 +538,7 @@ function draw(t){
   bodies.forEach(b=>{
     const ang=b.angle+b.omega*simDay;
     const bx=Math.cos(ang)*b.orbitR,by=Math.sin(ang)*b.orbitR;
-    const sx=wx(bx),sy=wy(by),r=iconSz[b.id]||6;
+    const sx=wx(bx),sy=wy(by),r=iconR(b);
     drawIcon(sx,sy,b,r);drawLabel(sx,sy,b.name,r);
     screenPos.push({sx,sy,r,b});
 
@@ -527,13 +546,13 @@ function draw(t){
       const mA=tepi.angle+tepi.omega*simDay,msx=sx+Math.cos(mA)*tepi.moonR,msy=sy+Math.sin(mA)*tepi.moonR;
       ctx.beginPath();ctx.arc(sx,sy,tepi.moonR,0,Math.PI*2);ctx.setLineDash([2,3]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=.6;ctx.stroke();ctx.setLineDash([]);
       const mb={id:'tepi',name:'Tepi',type:tepi.type,color:tepi.color,shineColor:tepi.shineColor,shape:'rocky',desc:tepi.desc,period:tepi.period};
-      drawIcon(msx,msy,mb,3.8);drawLabel(msx,msy,'Tepi',3.8);screenPos.push({sx:msx,sy:msy,r:3.8,b:mb});
+      const tr2=iconR({mag:4.5});drawIcon(msx,msy,mb,tr2);drawLabel(msx,msy,'Tepi',tr2);screenPos.push({sx:msx,sy:msy,r:tr2+4,b:mb});
     }
     if(b.hasSat){
       const kA=ko.angle+ko.omega*simDay,ksx=sx+Math.cos(kA)*ko.moonR,ksy=sy+Math.sin(kA)*ko.moonR;
       ctx.beginPath();ctx.arc(sx,sy,ko.moonR,0,Math.PI*2);ctx.setLineDash([1.5,3]);ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=.5;ctx.stroke();ctx.setLineDash([]);
       const kb={id:'ko',name:'Ko',type:ko.type,color:ko.color,shineColor:ko.shineColor,shape:'asteroid',desc:ko.desc,period:ko.period};
-      drawIcon(ksx,ksy,kb,2.5);drawLabel(ksx,ksy,'Ko',2.5);screenPos.push({sx:ksx,sy:ksy,r:2.5,b:kb});
+      const kr2=iconR({mag:5.5});drawIcon(ksx,ksy,kb,kr2);drawLabel(ksx,ksy,'Ko',kr2);screenPos.push({sx:ksx,sy:ksy,r:kr2+4,b:kb});
     }
   });
 
